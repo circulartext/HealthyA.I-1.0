@@ -63,7 +63,7 @@ Users should create their own CSV files based on their dietary intake and recomm
 An example file foods.csv is included, which contains the user's food data. Users can use it to find their foods and calculate nutrient data specific to their diet.
 
 It is good practice to adjust nutrient category weights to reflect personal priorities. Default weights in the script can be updated here:
-
+```
 # Nutrient category weights
 NUTRIENT_CATEGORY_WEIGHTS = {
     "Protein (g)": 0.15,
@@ -89,7 +89,7 @@ NUTRIENT_CATEGORY_WEIGHTS = {
 }
 
 Output
-
+```
 The script generates bar charts for each nutrient, displaying:
 
 Intake values.
