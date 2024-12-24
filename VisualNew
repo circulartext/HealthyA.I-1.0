@@ -1,0 +1,136 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+import numpy as np
+from matplotlib.patches import ConnectionPatch
+
+def visualize_combined(csv_file_intake, csv_file_adjustment):
+    # [Previous setup code remains the same until the curve plotting section]
+    
+    # Read the CSV files
+    intake_data = pd.read_csv(csv_file_intake)
+    adjustment_data = pd.read_csv(csv_file_adjustment)
+    
+    # Merge the datasets on the 'Nutrient' column using an outer join
+    combined_data = pd.merge(intake_data, adjustment_data, on='Nutrient', how='outer')
+    
+    # Set the nutrient names as the index
+    combined_data.set_index('Nutrient', inplace=True)
+    
+    # [Color definitions and setup remain the same...]
+    nutrient_colors = {
+    'Added Sugars (g)': '#FFD700',  # Golden for sugary syrup or honey
+    'Calcium (mg)': '#F5F5DC',  # Beige for milk
+    'Calories': '#FFA500',  # Orange for calorie-dense foods like oranges
+    'Cholesterol (mg)': '#D2691E',  # Brown for eggs or fatty meats
+    'Dietary Fiber (g)': '#228B22',  # Forest green for leafy greens
+    'Iron (mg)': '#8B0000',  # Dark red for red meats or spinach
+    'Magnesium (mg)': '#708090',  # Slate gray for nuts and seeds
+    'Omega-3 Fatty Acids (g)': '#4682B4',  # Steel blue for fish
+    'Potassium (mg)': '#FFA07A',  # Salmon pink for bananas or salmon
+    'Probiotics (CFUs)': '#F08080',  # Light coral for yogurt
+    'Protein (g)': '#8B4513',  # Saddle brown for meats and beans
+    'Saturated Fat (g)': '#FFE4B5',  # Moccasin for butter
+    'Sodium (mg)': '#87CEFA',  # Light sky blue for salty snacks
+    'Total Carbohydrate (g)': '#F4A460',  # Sandy brown for bread or pasta
+    'Total Fat (g)': '#FFDAB9',  # Peach puff for oily foods
+    'Total Sugars (g)': '#FF4500',  # Orange-red for candies
+    'Trans Fat (g)': '#A52A2A',  # Brown for processed fried items
+    'Vitamin B12 (mcg)': '#00CED1',  # Dark turquoise for seafood
+    'Vitamin B6 (%DV)': '#9ACD32',  # Yellow-green for potatoes
+    'Vitamin C (%DV)': '#FF6347',  # Tomato red for citrus fruits
+    'Vitamin D3 (IU)': '#FFFFE0',  # Light yellow for sunlight or fortified milk
+    'Zinc (mg)': '#6A5ACD',  # Slate blue for shellfish
+        # [Rest of colors remain the same...]
+    }
+    
+    # Define the number of charts per row
+    charts_per_row = 5
+    total_charts = len(combined_data)
+    rows = (total_charts + charts_per_row - 1) // charts_per_row
+    
+    # Create a figure with a grid layout
+    fig, axes = plt.subplots(rows, charts_per_row, figsize=(15, rows * 3), 
+                            gridspec_kw={'hspace': 0.6, 'wspace': 0.5})
+    
+    # Flatten axes for easier iteration
+    axes = axes.flatten()
+    
+    # Iterate over each nutrient and its data
+    for i, (nutrient, row) in enumerate(combined_data.iterrows()):
+        ax = axes[i]
+        
+        nutrient_color = nutrient_colors.get(nutrient, 'blue')
+        bar_colors = [nutrient_color, 'lightgray', 'gray']
+        bar_labels = ['Intake', 'Min RDI', 'Max RDI']
+        bar_values = [
+            row.get('Intake', 0),
+            row.get('Min RDI', 0),
+            row.get('Max RDI', 0)
+        ]
+        ax.bar(bar_labels, bar_values, color=bar_colors, width=0.5)
+        
+        if pd.notna(row.get('Adjustment')):
+            adjustment_value = float(row['Adjustment'].split(' ')[2])
+            action = 'Increase' if 'Increase' in row['Adjustment'] else 'Decrease'
+            adjustment_color = 'orange' if action == 'Increase' else 'red'
+            
+            # Calculate start and target points
+            start_x = 0  # Position of Intake bar
+            start_y = bar_values[0]  # Current intake value
+            
+            # Calculate target value by adding/subtracting adjustment from intake
+            if action == 'Increase':
+                target_value = start_y + adjustment_value
+            else:
+                target_value = start_y - adjustment_value
+            
+            # Create two-segment line: curved to target, then straight
+            x1 = np.linspace(start_x, 1, 50)  # First segment
+            x2 = np.linspace(1, 2, 50)        # Second segment
+            
+            # Calculate y values for first segment (curved)
+            y1 = np.array([start_y + (target_value - start_y) * ((xi - start_x)) for xi in x1])
+            
+            # Second segment is straight at target value
+            y2 = np.full_like(x2, target_value)
+            
+            # Combine segments
+            x = np.concatenate([x1, x2])
+            y = np.concatenate([y1, y2])
+            
+            # Plot the line
+            ax.plot(x, y, color=adjustment_color, linestyle='--', linewidth=2)
+            
+            # Add adjustment annotation near the middle of the first segment
+            mid_x = 0.5  # Middle of first segment
+            mid_y = start_y + (target_value - start_y) * 0.5
+            ax.text(mid_x, mid_y + (max(bar_values) * 0.05),
+                   f'{adjustment_value:.1f}', ha='center', fontsize=8, color=adjustment_color)
+        
+        # Set the y-axis limits
+        max_value = max(bar_values)
+        if not np.isnan(max_value) and not np.isinf(max_value):
+            ax.set_ylim(0, max_value * 1.2)
+        
+        # Add titles and labels
+        ax.set_title(f'{nutrient}', fontsize=10)
+        ax.set_ylabel('Amount', fontsize=8)
+        ax.tick_params(axis='both', labelsize=8)
+        ax.yaxis.set_major_locator(MaxNLocator(5))
+        
+        # Add value annotations on bars
+        for idx, value in enumerate(bar_values):
+            ax.text(idx, value + (max_value * 0.05), f'{value:.1f}', ha='center', fontsize=8)
+    
+    # Turn off any unused subplots
+    for j in range(total_charts, len(axes)):
+        axes[j].axis('off')
+    
+    # Add a shared x-axis label at the bottom
+    fig.text(0.5, 0.02, 'Nutrient Categories', ha='center', fontsize=12)
+    plt.tight_layout()
+    plt.show()
+
+if __name__ == "__main__":
+    visualize_combined('nutrient_intake_results.csv', 'ideal_adjustments.csv')
