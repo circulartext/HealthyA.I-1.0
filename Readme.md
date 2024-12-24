@@ -34,13 +34,14 @@ pip install -r requirements.txt
 
 Usage
 
-Place your data files (nutrient_intake_results.csv and ideal_adjustments.csv) in the same directory as the script.
+Run the first script: Start by running dailynutritiondata.py to prepare and process the nutrient data.
 
-Update the filenames in the script, if necessary.
+Run the visualization script: After processing, run visual.py to generate visualizations.
 
-Run the script:
+Example Commands
 
-python script_name.py
+python dailynutritiondata.py
+python visual.py
 
 Input Data Formats
 
@@ -56,6 +57,13 @@ Nutrient,Adjustment
 Protein,Increase by 10 grams
 Vitamin C,Decrease by 15 mg
 
+foods.csv (Example):
+
+Food,Serving Size (g),Calories,Total Fat (g),Saturated Fat (g),Trans Fat (g),Cholesterol (mg),Sodium (mg),Total Carbohydrate (g),Dietary Fiber (g),Total Sugars (g),Added Sugars (g),Protein (g),Vitamin D (mcg),Calcium (mg),Iron (mg),Potassium (mg),Zinc (mg),Vitamin B12 (mcg),Vitamin C (%DV),Vitamin B6 (%DV),Magnesium (%DV)
+Black Bean Veggie Burger,71,120,4.5,0.5,0,0,220,15,4,2,1,9,0,60,1.5,260,0,0,0,0,0
+Green Veggie Burger,71,120,6,0.5,0,0,290,14,4,2,0,2,0,60,1.1,180,0,0,0,0,0
+veggieburger2,85,230,14,2,0,0,450,11,6,1,0,21,0,110,2.9,670,0,0,0,0,0
+
 Notes:
 
 Users should create their own CSV files based on their dietary intake and recommendations.
@@ -63,7 +71,7 @@ Users should create their own CSV files based on their dietary intake and recomm
 An example file foods.csv is included, which contains the user's food data. Users can use it to find their foods and calculate nutrient data specific to their diet.
 
 It is good practice to adjust nutrient category weights to reflect personal priorities. Default weights in the script can be updated here:
-```
+
 # Nutrient category weights
 NUTRIENT_CATEGORY_WEIGHTS = {
     "Protein (g)": 0.15,
@@ -89,7 +97,7 @@ NUTRIENT_CATEGORY_WEIGHTS = {
 }
 
 Output
-```
+
 The script generates bar charts for each nutrient, displaying:
 
 Intake values.
@@ -134,6 +142,3 @@ git commit -m "Update files"
 git push
 
 License
-
-This project is licensed under the MIT License.
-
