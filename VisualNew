@@ -1,136 +1,179 @@
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
 import numpy as np
-from matplotlib.patches import ConnectionPatch
+from matplotlib.ticker import MaxNLocator
+from typing import Dict, Tuple
 
-def visualize_combined(csv_file_intake, csv_file_adjustment):
-    # [Previous setup code remains the same until the curve plotting section]
+class NutrientVisualizer:
+    """A class to create professional nutrient intake visualizations."""
     
-    # Read the CSV files
-    intake_data = pd.read_csv(csv_file_intake)
-    adjustment_data = pd.read_csv(csv_file_adjustment)
-    
-    # Merge the datasets on the 'Nutrient' column using an outer join
-    combined_data = pd.merge(intake_data, adjustment_data, on='Nutrient', how='outer')
-    
-    # Set the nutrient names as the index
-    combined_data.set_index('Nutrient', inplace=True)
-    
-    # [Color definitions and setup remain the same...]
-    nutrient_colors = {
-    'Added Sugars (g)': '#FFD700',  # Golden for sugary syrup or honey
-    'Calcium (mg)': '#F5F5DC',  # Beige for milk
-    'Calories': '#FFA500',  # Orange for calorie-dense foods like oranges
-    'Cholesterol (mg)': '#D2691E',  # Brown for eggs or fatty meats
-    'Dietary Fiber (g)': '#228B22',  # Forest green for leafy greens
-    'Iron (mg)': '#8B0000',  # Dark red for red meats or spinach
-    'Magnesium (mg)': '#708090',  # Slate gray for nuts and seeds
-    'Omega-3 Fatty Acids (g)': '#4682B4',  # Steel blue for fish
-    'Potassium (mg)': '#FFA07A',  # Salmon pink for bananas or salmon
-    'Probiotics (CFUs)': '#F08080',  # Light coral for yogurt
-    'Protein (g)': '#8B4513',  # Saddle brown for meats and beans
-    'Saturated Fat (g)': '#FFE4B5',  # Moccasin for butter
-    'Sodium (mg)': '#87CEFA',  # Light sky blue for salty snacks
-    'Total Carbohydrate (g)': '#F4A460',  # Sandy brown for bread or pasta
-    'Total Fat (g)': '#FFDAB9',  # Peach puff for oily foods
-    'Total Sugars (g)': '#FF4500',  # Orange-red for candies
-    'Trans Fat (g)': '#A52A2A',  # Brown for processed fried items
-    'Vitamin B12 (mcg)': '#00CED1',  # Dark turquoise for seafood
-    'Vitamin B6 (%DV)': '#9ACD32',  # Yellow-green for potatoes
-    'Vitamin C (%DV)': '#FF6347',  # Tomato red for citrus fruits
-    'Vitamin D3 (IU)': '#FFFFE0',  # Light yellow for sunlight or fortified milk
-    'Zinc (mg)': '#6A5ACD',  # Slate blue for shellfish
-        # [Rest of colors remain the same...]
-    }
-    
-    # Define the number of charts per row
-    charts_per_row = 5
-    total_charts = len(combined_data)
-    rows = (total_charts + charts_per_row - 1) // charts_per_row
-    
-    # Create a figure with a grid layout
-    fig, axes = plt.subplots(rows, charts_per_row, figsize=(15, rows * 3), 
-                            gridspec_kw={'hspace': 0.6, 'wspace': 0.5})
-    
-    # Flatten axes for easier iteration
-    axes = axes.flatten()
-    
-    # Iterate over each nutrient and its data
-    for i, (nutrient, row) in enumerate(combined_data.iterrows()):
-        ax = axes[i]
+    def __init__(self):
+        self.style_config = {
+            'figure.facecolor': 'white',
+            'axes.facecolor': 'white',
+            'axes.edgecolor': '#333333',
+            'axes.labelcolor': '#333333',
+            'axes.spines.top': False,
+            'axes.spines.right': False,
+            'xtick.color': '#333333',
+            'ytick.color': '#333333',
+            'text.color': '#333333',
+            'font.family': 'sans-serif',
+            'font.sans-serif': ['Arial', 'Helvetica', 'DejaVu Sans']
+        }
         
-        nutrient_color = nutrient_colors.get(nutrient, 'blue')
-        bar_colors = [nutrient_color, 'lightgray', 'gray']
-        bar_labels = ['Intake', 'Min RDI', 'Max RDI']
-        bar_values = [
-            row.get('Intake', 0),
-            row.get('Min RDI', 0),
-            row.get('Max RDI', 0)
-        ]
-        ax.bar(bar_labels, bar_values, color=bar_colors, width=0.5)
+        self.nutrient_colors = {
+            'Added Sugars (g)': '#FF9999',
+            'Calcium (mg)': '#99CCFF',
+            'Calories': '#FFB366',
+            'Cholesterol (mg)': '#FF99CC',
+            'Dietary Fiber (g)': '#99FF99',
+            'Iron (mg)': '#FF6666',
+            'Magnesium (mg)': '#CC99FF',
+            'Omega-3 Fatty Acids (g)': '#66B2FF',
+            'Potassium (mg)': '#FFCC99',
+            'Probiotics (CFUs)': '#FF99FF',
+            'Protein (g)': '#99FFCC',
+            'Saturated Fat (g)': '#FFFF99',
+            'Sodium (mg)': '#99FFFF',
+            'Total Carbohydrate (g)': '#FFB399',
+            'Total Fat (g)': '#FF99B3',
+            'Total Sugars (g)': '#FF8080',
+            'Trans Fat (g)': '#FF6666',
+            'Vitamin B12 (mcg)': '#80FF80',
+            'Vitamin B6 (%DV)': '#80FF99',
+            'Vitamin C (%DV)': '#FF8080',
+            'Vitamin D3 (IU)': '#FFFF80',
+            'Zinc (mg)': '#8080FF'
+        }
+
+    def _apply_style(self) -> None:
+        """Apply professional style settings to the plot."""
+        plt.style.use('seaborn-v0_8-whitegrid')
+        for param, value in self.style_config.items():
+            plt.rcParams[param] = value
+
+    def _create_adjustment_curve(self, ax: plt.Axes, start_point: Tuple[float, float], 
+                               target_value: float, color: str) -> None:
+        """Create a smooth adjustment curve with improved aesthetics."""
+        start_x, start_y = start_point
+        x1 = np.linspace(start_x, 1, 50)
+        x2 = np.linspace(1, 2, 50)
         
-        if pd.notna(row.get('Adjustment')):
-            adjustment_value = float(row['Adjustment'].split(' ')[2])
-            action = 'Increase' if 'Increase' in row['Adjustment'] else 'Decrease'
-            adjustment_color = 'orange' if action == 'Increase' else 'red'
-            
-            # Calculate start and target points
-            start_x = 0  # Position of Intake bar
-            start_y = bar_values[0]  # Current intake value
-            
-            # Calculate target value by adding/subtracting adjustment from intake
-            if action == 'Increase':
-                target_value = start_y + adjustment_value
-            else:
-                target_value = start_y - adjustment_value
-            
-            # Create two-segment line: curved to target, then straight
-            x1 = np.linspace(start_x, 1, 50)  # First segment
-            x2 = np.linspace(1, 2, 50)        # Second segment
-            
-            # Calculate y values for first segment (curved)
-            y1 = np.array([start_y + (target_value - start_y) * ((xi - start_x)) for xi in x1])
-            
-            # Second segment is straight at target value
-            y2 = np.full_like(x2, target_value)
-            
-            # Combine segments
-            x = np.concatenate([x1, x2])
-            y = np.concatenate([y1, y2])
-            
-            # Plot the line
-            ax.plot(x, y, color=adjustment_color, linestyle='--', linewidth=2)
-            
-            # Add adjustment annotation near the middle of the first segment
-            mid_x = 0.5  # Middle of first segment
-            mid_y = start_y + (target_value - start_y) * 0.5
-            ax.text(mid_x, mid_y + (max(bar_values) * 0.05),
-                   f'{adjustment_value:.1f}', ha='center', fontsize=8, color=adjustment_color)
+        # Create smooth bezier curve for first segment
+        y1 = start_y + (target_value - start_y) * (1 - np.cos(np.pi * (x1 - start_x) / 2))
+        y2 = np.full_like(x2, target_value)
         
-        # Set the y-axis limits
-        max_value = max(bar_values)
-        if not np.isnan(max_value) and not np.isinf(max_value):
-            ax.set_ylim(0, max_value * 1.2)
+        x = np.concatenate([x1, x2])
+        y = np.concatenate([y1, y2])
         
-        # Add titles and labels
-        ax.set_title(f'{nutrient}', fontsize=10)
-        ax.set_ylabel('Amount', fontsize=8)
-        ax.tick_params(axis='both', labelsize=8)
+        ax.plot(x, y, color=color, linestyle='--', linewidth=1.5, alpha=0.7)
+
+    def _format_axis(self, ax: plt.Axes, title: str, max_value: float) -> None:
+        """Apply professional formatting to chart axes."""
+        ax.set_title(title, fontsize=10, pad=10, fontweight='bold')
+        ax.set_ylabel('Amount', fontsize=8, labelpad=5)
+        ax.tick_params(axis='both', labelsize=7)
         ax.yaxis.set_major_locator(MaxNLocator(5))
         
-        # Add value annotations on bars
-        for idx, value in enumerate(bar_values):
-            ax.text(idx, value + (max_value * 0.05), f'{value:.1f}', ha='center', fontsize=8)
-    
-    # Turn off any unused subplots
-    for j in range(total_charts, len(axes)):
-        axes[j].axis('off')
-    
-    # Add a shared x-axis label at the bottom
-    fig.text(0.5, 0.02, 'Nutrient Categories', ha='center', fontsize=12)
-    plt.tight_layout()
-    plt.show()
+        # Handle edge cases for axis limits
+        if np.isnan(max_value) or np.isinf(max_value) or max_value == 0:
+            ax.set_ylim(0, 1)  # Set default limits if invalid values
+        else:
+            ax.set_ylim(0, max_value * 1.2)
+            
+        ax.grid(True, axis='y', linestyle='--', alpha=0.3)
+
+    def _parse_adjustment(self, adjustment_str: str) -> Tuple[float, str]:
+        """Parse adjustment string to extract value and action."""
+        if pd.isna(adjustment_str):
+            return 0, 'None'
+        
+        parts = adjustment_str.split(' ')
+        value = float(parts[2])
+        action = parts[0]
+        return value, action
+
+    def visualize(self, csv_file_intake: str, csv_file_adjustment: str, 
+                 charts_per_row: int = 5, fig_height_per_row: int = 3) -> None:
+        """Create a professional visualization of nutrient intake and adjustments."""
+        self._apply_style()
+        
+        # Load and process data
+        intake_data = pd.read_csv(csv_file_intake)
+        adjustment_data = pd.read_csv(csv_file_adjustment)
+        
+        # Handle missing values in intake data
+        intake_data = intake_data.fillna(0)
+        
+        # Merge datasets
+        combined_data = pd.merge(intake_data, adjustment_data, on='Nutrient', how='left')
+        combined_data.set_index('Nutrient', inplace=True)
+        
+        # Setup figure layout
+        total_charts = len(combined_data)
+        rows = (total_charts + charts_per_row - 1) // charts_per_row
+        fig, axes = plt.subplots(rows, charts_per_row, 
+                                figsize=(15, rows * fig_height_per_row),
+                                gridspec_kw={'hspace': 0.8, 'wspace': 0.4})
+        axes = axes.flatten()
+        
+        # Create individual charts
+        for i, (nutrient, row) in enumerate(combined_data.iterrows()):
+            ax = axes[i]
+            nutrient_color = self.nutrient_colors.get(nutrient, '#808080')
+            
+            # Get bar values and handle NaN/Inf
+            intake = row.get('Intake', 0) if not np.isnan(row.get('Intake', 0)) else 0
+            min_rdi = row.get('Min RDI', 0) if not np.isnan(row.get('Min RDI', 0)) else 0
+            max_rdi = row.get('Max RDI', 0) if not np.isnan(row.get('Max RDI', 0)) else 0
+            
+            bar_values = [intake, min_rdi, max_rdi]
+            bars = ax.bar(['Intake', 'Min RDI', 'Max RDI'], bar_values,
+                         color=[nutrient_color, '#E6E6E6', '#CCCCCC'],
+                         width=0.6, alpha=0.8)
+            
+            # Add value labels
+            max_value = max(filter(lambda x: not np.isnan(x) and not np.isinf(x), bar_values + [1]))
+            for bar in bars:
+                height = bar.get_height()
+                if not np.isnan(height) and not np.isinf(height):
+                    ax.text(bar.get_x() + bar.get_width()/2, height,
+                           f'{height:.1f}', ha='center', va='bottom',
+                           fontsize=7, color='#333333')
+            
+            # Add adjustment curve if needed
+            if pd.notna(row.get('Adjustment')):
+                adjustment_value, action = self._parse_adjustment(row['Adjustment'])
+                adjustment_color = '#2ECC71' if action == 'Increase' else '#E74C3C'
+                
+                target_value = (intake + adjustment_value 
+                              if action == 'Increase' 
+                              else intake - adjustment_value)
+                
+                if not np.isnan(target_value) and not np.isinf(target_value):
+                    self._create_adjustment_curve(ax, (0, intake), 
+                                               target_value, adjustment_color)
+                    
+                    # Add adjustment label
+                    ax.text(0.5, (intake + target_value)/2,
+                           f'{adjustment_value:+.1f}', ha='center', va='bottom',
+                           fontsize=7, color=adjustment_color)
+            
+            self._format_axis(ax, nutrient, max_value)
+        
+        # Hide unused subplots
+        for j in range(total_charts, len(axes)):
+            axes[j].axis('off')
+        
+        # Add title and adjust layout
+        fig.suptitle('Nutrient Intake Analysis', fontsize=14, y=1.02, fontweight='bold')
+        fig.text(0.5, 0.02, 'Nutrient Categories', ha='center', fontsize=12)
+        plt.tight_layout()
+        
+        return fig
 
 if __name__ == "__main__":
-    visualize_combined('nutrient_intake_results.csv', 'ideal_adjustments.csv')
+    visualizer = NutrientVisualizer()
+    visualizer.visualize('nutrient_intake_results.csv', 'ideal_adjustments.csv')
+    plt.show()
